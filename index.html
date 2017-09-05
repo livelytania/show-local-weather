@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+    
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        
+        <title>Show the Local Weather</title>
+        
+        <link rel="stylesheet" href="style.css">
+        
+    </head>
+    
+    <body>
+        
+        <div class="container">
+        
+            <p class='faded-text'>
+                The temperature in 
+                <span id="location">your location</span>
+                <span id="loading" class="loading faded-text">today is </span>
+                <span class="ease-in"><span id="temp"></span><span>&deg;</span><span id="unit">C</span></span>
+            </p>
+            
+            <div class="icon-container ease-in"><a id="icon" class="icon" href="" data-icon=""></a></div>
+
+            <a id="toggleUnit" href='#'>Click here to switch to <span id="unitType">farenheit</span></a>
+            
+        </div>
+        
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+        
+        <script type="text/javascript">
+            
+            /* This is a web-based app that shows the weather in the users current location. It allows the user to see the temperature in either Celcius or Farenheit, and displays a weather icon.
+            
+            The app uses the HTML5 Geolocation API to get the user's current location in the form of latitude & longitude.
+            
+            Using ajax, a reverse geocoding GET request is sent through the Google Maps Geocoding API to get the city name that corresponds to the users coordinates.
+            
+            Using ajax, a GET request is sent through the freeCodeCamp Weather API https://fcc-weather-api.glitch.me to get the tempearture and weather icon. */
+                
+            
+            
+            // check if browser supports HTML5 geolocation API by checking if the navigator.geolocation object exists
+            
+            var temperature;
+            var icon;
+            
+            // iconArray based on http://www.alessioatzeni.com/meteocons/
+            
+            var iconArray = {
+                A:'Sunrise',
+                B:'Clear', // verified
+                C:'Clear night', // verified
+                D:'Eclipse',
+                E:'Foggy night',
+                F:'Wind',
+                H:'Scattered clouds',
+                I:'Cloudy night',
+                J:'Haze', // verified
+                K:'Nighttime fog',
+                L:'Broken clouds',
+                M:'Mist', // verified
+                N:'Overcast',
+                O:'Thunderstorms',
+                P:'Lightning',
+                Q:'Drizzle', // verified
+                R:'Rain', // verified
+                S:'Wind',
+                T:'Rain and wind',
+                U:'Light snow',
+                V:'Snow',
+                W:'Heavy snow',
+                X:'Hail',
+                Y:'Clouds', // verified
+                Z:'Storms',
+                0:'Heavy thunderstorms'
+            }
+
+            if (!navigator.geolocation) {
+                
+                // geolocation IS NOT available, display error message
+                
+                $("#location").html("Sorry! Looks like geolocation is not supported by your browser.");
+                
+            } else {
+                
+                // geolocation is available
+                
+                // get user's location by calling the getCurrentPosition() method
+                
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    
+                    var latitude = position.coords.latitude;
+                    var longitude = position.coords.longitude;
+                    
+                    /* Get and display city name - run a reverse geocoding GET request through the Google Maps Geocoding API. */
+                
+                    var apiKey = 'AIzaSyBGRE60VGrgyza6_PingjtYF-8_Xy4qixc';
+
+                    $.ajax({
+
+                        url: 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + latitude + "," + longitude + '&key=' + apiKey,
+                        type: 'GET',
+                        success: function(data) {
+
+                            if (data['status'] != 'OK') {
+
+                                $('#toggleUnit').html('Sorry! We can\'t seem to pinpoint your current location.');
+
+                            } else {
+
+                                $.each(data['results'][0]['address_components'], function (key, value) {
+
+                                    if (value['types'][0] === 'locality') {
+
+                                        $('#location').html(value['long_name']);
+
+                                    }
+
+                                })
+
+                            }
+                        }
+
+                    });
+                    
+                    /* Run a GET request throught the freeCodeCamp weather API to get weather */
+                
+                    $.ajax({
+
+                        url: 'https://fcc-weather-api.glitch.me/api/current?lat=' + latitude + '&lon=' + longitude,
+                        type: 'GET',
+                        success: function(data) {
+                            
+                            // get and display temperature
+                            $('#loading').removeClass("loading");
+                            temperature = data['main']['temp'].toFixed();
+                            $('#temp').html(temperature);
+                            
+                            // get and display weather icon
+                            icon = data['weather'][0]['main'];
+                            console.log(icon);
+                            $.each(iconArray, function (key, value) {
+                                if (value == icon) {
+                                    console.log(icon + ' ' + key);
+                                    $('#icon').attr('data-icon',key);
+                                }
+                            });
+                            
+                            // fade in temperature and icon
+                            $('.ease-in').css('visibility','visible').hide().fadeIn('slow');
+                            
+                        }
+
+                    });
+
+                });
+
+            }
+            
+            // let user toggle between Celcius and Farenheit
+            
+            $('#toggleUnit').click(function() {
+                
+                var celcius = temperature;
+                var farenheit = temperature * 1.8 + 32;
+                farenheit = farenheit.toFixed();
+                
+                if ($('#unit').html() == 'C') {
+                    $('#unit').html('F');
+                    $('#temp').html(farenheit);
+                    $('#unitType').html('celcius');
+                }
+                else {
+                    $('#unit').html('C');
+                    $('#temp').html(celcius);
+                    $('#unitType').html('farenheit');
+                }
+                
+            });
+            
+        </script>
+        
+    </body>
+</html>
